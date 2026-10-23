@@ -2,6 +2,16 @@
 
 Reproductor Android nativo, con biblioteca local, varias fuentes de música y reproducción Media3.
 
+## Versión 1.6.0
+
+- Perfil con avatar y banner propios, superposición del avatar y ocho plantillas editables: Graphite, Noche estrellada, Sakura, Café, Crimson, Bosque, Océano y Lavanda.
+- Editor con vista previa, colores hexadecimales, tres tipografías, tres formas de avatar, distribución centrada o lateral, altura del banner y decoraciones de estrellas, ondas y cuadrícula.
+- Estado, emoji, pronombres/etiqueta, presentación y texto libre «Sobre mí». Hasta 20 plantillas personales reutilizables con sus fotos.
+- Mostrar u ocultar estadísticas y playlists. Ocultar las playlists también las excluye del perfil compartido; compartir una playlist individual sigue siendo una acción explícita.
+- El QR conserva el diseño sin fotos y puede recortar textos largos. El archivo completo puede incluir avatar y banner normalizados, sin EXIF, al elegir esa opción al exportar. Versiones antiguas siguen abriendo los datos básicos del perfil.
+- Aviso automático de nuevas versiones estables de este repositorio, como máximo una consulta al día al abrir la app. Acciones Actualizar, Más tarde y Omitir versión. Ajustes → Actualizaciones permite desactivar avisos o buscar manualmente.
+- Actualizar abre el APK oficial en el navegador; Android solicita confirmar la instalación. Instalar 1.6.0 una vez habilita los avisos para las versiones futuras.
+
 ## Versión 1.5.1
 
 - Inicio con perfil, filtros y accesos a favoritos y playlists, inspirado en la referencia compartida.
