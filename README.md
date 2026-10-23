@@ -2,7 +2,7 @@
 
 Reproductor Android nativo, con biblioteca local, varias fuentes de música y reproducción Media3.
 
-## Versión 1.5
+## Versión 1.5.1
 
 - Inicio con perfil, filtros y accesos a favoritos y playlists, inspirado en la referencia compartida.
 - Crear, describir, duplicar y fijar playlists. Elegir foto propia, logo o carátula automática.
@@ -11,6 +11,7 @@ Reproductor Android nativo, con biblioteca local, varias fuentes de música y re
 - Gustos iniciales por artistas y géneros. El mix combina afinidad con favoritos e historial, variedad por artista y la opción de ocultar canciones.
 - Perfil y playlists compartidos por QR autocontenido: funciona sin servidor y se abre desde Open Music. Cada QR es una copia; no hay sincronización entre dispositivos.
 - El QR incluye hasta 8 playlists y una muestra de hasta 6 canciones por lista, ajustada a su capacidad. Se informa el número real incluido. El archivo de perfil JSON permite compartir la colección completa dentro de un límite de 2 MB.
+- Corregida la selección al compartir playlists con nombres repetidos.
 - Las importaciones no transmiten archivos privados, audio, credenciales, permisos de descarga ni enlaces temporales. Los logos integrados y las descripciones viajan con el perfil; las fotos elegidas del teléfono permanecen en ese dispositivo.
 - Filtros desplazables en pantallas estrechas, títulos limitados a dos líneas y posición de scroll conservada cuando llegan recomendaciones.
 

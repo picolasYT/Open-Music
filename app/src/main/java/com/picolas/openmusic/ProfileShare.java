@@ -20,8 +20,12 @@ public final class ProfileShare {
     public static Snapshot snapshot(LocalProfile p,MusicStore store)throws Exception{
         Snapshot s=new Snapshot();s.name=p.name();s.bio=p.bio();s.avatar=p.avatar();s.created=System.currentTimeMillis();
         JSONObject backup=new JSONObject(LibraryBackup.export(store));JSONArray lists=backup.getJSONArray("playlists");s.totalPlaylists=lists.length();
-        for(int i=0;i<lists.length();i++){JSONObject j=lists.getJSONObject(i);List<Track> tracks=new ArrayList<>();JSONArray a=j.getJSONArray("tracks");for(int x=0;x<a.length();x++)tracks.add(Track.from(a.getJSONObject(x)));s.totalTracks+=tracks.size();String name=j.getString("name");while(s.playlists.containsKey(name))name+=" ·";s.playlists.put(name,tracks);String style=j.optString("cover");if(style.matches("mark:[0-7]"))s.covers.put(name,style);s.descriptions.put(name,j.optString("description"));}
+        for(int i=0;i<lists.length();i++){JSONObject j=lists.getJSONObject(i);List<Track> tracks=new ArrayList<>();JSONArray a=j.getJSONArray("tracks");for(int x=0;x<a.length();x++)tracks.add(Track.from(a.getJSONObject(x)));s.totalTracks+=tracks.size();String base=j.getString("name"),name=base;int duplicate=1;while(s.playlists.containsKey(name))name=base.substring(0,Math.min(90,base.length()))+" · "+(++duplicate);s.playlists.put(name,tracks);String style=j.optString("cover");if(style.matches("mark:[0-7]"))s.covers.put(name,style);s.descriptions.put(name,j.optString("description"));}
         return s;
+    }
+    public static Snapshot playlist(Snapshot full,int index)throws IOException{
+        if(index<0||index>=full.playlists.size())throw new IOException("La playlist ya no está disponible");
+        String name=new ArrayList<>(full.playlists.keySet()).get(index);Snapshot s=new Snapshot();s.name=full.name;s.bio=full.bio;s.avatar=full.avatar;s.created=full.created;s.playlists.put(name,new ArrayList<>(full.playlists.get(name)));s.covers.put(name,full.covers.getOrDefault(name,""));s.descriptions.put(name,full.descriptions.getOrDefault(name,""));s.totalPlaylists=1;s.totalTracks=s.included();return s;
     }
     public static String json(Snapshot s)throws JSONException{
         JSONArray lists=new JSONArray();for(Map.Entry<String,List<Track>> e:s.playlists.entrySet()){
