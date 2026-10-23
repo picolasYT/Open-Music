@@ -30,8 +30,8 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
-            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.picolas.openmusic.ProfileDeviceTest,com.picolas.openmusic.CustomizationDeviceTest
-            adb pull /sdcard/Android/data/com.picolas.openmusic.next/files qa-screens || true
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true -Pandroid.testInstrumentationRunnerArguments.class=com.picolas.openmusic.ProfileDeviceTest,com.picolas.openmusic.CustomizationDeviceTest
+            adb pull /sdcard/Android/data/com.picolas.openmusic.next/files qa-screens
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -43,4 +43,5 @@ jobs:
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
             app/build/reports/tests/
+            app/build/test-results/
             app/build/reports/lint-results-debug.html
