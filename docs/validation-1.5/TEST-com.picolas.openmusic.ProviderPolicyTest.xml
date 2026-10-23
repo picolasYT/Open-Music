@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.picolas.openmusic.ProviderPolicyTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-23T02:16:14.002Z" hostname="50109c4ff61e" time="0.003">
+  <properties/>
+  <testcase name="importedMetadataNeverGrantsStreamOrDownloadRights" classname="com.picolas.openmusic.ProviderPolicyTest" time="0.001"/>
+  <testcase name="downloadedTrackRoundTripsWithoutLosingLocalUri" classname="com.picolas.openmusic.ProviderPolicyTest" time="0.001"/>
+  <testcase name="deletedTracksHaveNoStream" classname="com.picolas.openmusic.ProviderPolicyTest" time="0.0"/>
+  <testcase name="malformedSpotdlInputFails" classname="com.picolas.openmusic.ProviderPolicyTest" time="0.0"/>
+  <testcase name="missingCapabilityFieldsFailClosed" classname="com.picolas.openmusic.ProviderPolicyTest" time="0.0"/>
+  <testcase name="downloadsNeedExplicitUngatedPublicUrl" classname="com.picolas.openmusic.ProviderPolicyTest" time="0.0"/>
+  <testcase name="gatedTracksCannotBePlayedOrDownloaded" classname="com.picolas.openmusic.ProviderPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

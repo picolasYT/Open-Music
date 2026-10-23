@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.picolas.openmusic.ProfileShareTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-23T02:16:13.850Z" hostname="50109c4ff61e" time="0.147">
+  <properties/>
+  <testcase name="generatedQrCanBeReadByTheActualDecoder" classname="com.picolas.openmusic.ProfileShareTest" time="0.105"/>
+  <testcase name="qrIsBoundedAndDisclosesOmittedSongs" classname="com.picolas.openmusic.ProfileShareTest" time="0.006"/>
+  <testcase name="invalidQrIsRejected" classname="com.picolas.openmusic.ProfileShareTest" time="0.001"/>
+  <testcase name="roundTripContainsNoAudioRightsOrFilePaths" classname="com.picolas.openmusic.ProfileShareTest" time="0.007"/>
+  <testcase name="decompressionBombIsRejected" classname="com.picolas.openmusic.ProfileShareTest" time="0.014"/>
+  <testcase name="foreignProviderAndForgedUrisAreRejectedOrStripped" classname="com.picolas.openmusic.ProfileShareTest" time="0.01"/>
+  <testcase name="selectedPlaylistKeepsItsOwnTracksWhenNamesAreRepeated" classname="com.picolas.openmusic.ProfileShareTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

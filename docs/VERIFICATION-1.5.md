@@ -6,6 +6,6 @@ La migración SQLite pasa de versión 1 a 2 agregando únicamente metadatos de p
 
 La suite 1.5 terminó OK (10 tests) en Android 15: controles AAC, audio local, segundo plano, error visible, HTTPS, biblioteca, respaldo, cancelación de descargas, migración, edición/orden de playlists y tutorial inicial. La CI con aceleración pasó otras 4 comprobaciones enfocadas, incluida la copia de una foto PNG y el render de la playlist. La revisión visual examinó Inicio, Perfil y Buscar.
 
-1.5.1 corrige el QR de listas con nombres repetidos y tolera imágenes sin EXIF; pasó 34 pruebas unitarias y lint sin errores. La comprobación enfocada sobre el APK 1.5.1 está en ejecución; se conserva el informe anterior como evidencia de regresión.
+1.5.1 corrige el QR de listas con nombres repetidos y tolera imágenes sin EXIF; pasó 34 pruebas unitarias y lint sin errores. El APK final 1.5.1 se instaló sobre 1.5 sin desinstalar y pasó las cuatro pruebas enfocadas en Android 15: migración, persistencia de edición/orden, foto PNG copiada a JPEG privado con render de la playlist y tutorial completo recordado. El informe está en validation-1.5/android-profile-1.5.1.txt. La firma coincide con las versiones anteriores.
 
 El scanner usa ZXing y solicita permiso de cámara al escanear. El QR no depende de un servidor; sus datos no prueban identidad ni se actualizan automáticamente. Un perfil local por instalación. No se verificó lectura óptica entre teléfonos físicos ni audio online de YouTube de extremo a extremo en esta entrega.
