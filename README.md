@@ -1,3 +1,7 @@
+## Actualización 1.6.1
+
+Perfil con avatar y banner corregidos, botones redondeados y guía rápida ilustrada sin conexión. Ver [novedades](docs/RELEASE-1.6.1.md).
+
 # Open Music — Picolas
 
 Reproductor Android nativo, con biblioteca local, varias fuentes de música y reproducción Media3.
