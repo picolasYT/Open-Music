@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.picolas.openmusic.AudioPolicyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-22T10:36:24.999Z" hostname="229054e17629" time="0.18">
+  <properties/>
+  <testcase name="signedAddressesAreEphemeralAndDropCredentials" classname="com.picolas.openmusic.AudioPolicyTest" time="0.004"/>
+  <testcase name="importedYoutubeIdentityCanResolveWithoutGrantingDownloads" classname="com.picolas.openmusic.AudioPolicyTest" time="0.174"/>
+  <testcase name="rejectsForeignSourcesHeaderInjectionAndExpiredLinks" classname="com.picolas.openmusic.AudioPolicyTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

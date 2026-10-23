@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.picolas.openmusic.BackupPolicyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-22T10:36:25.181Z" hostname="229054e17629" time="0.041">
+  <properties/>
+  <testcase name="rejectsForeignFormatAndLocalIdentifiers" classname="com.picolas.openmusic.BackupPolicyTest" time="0.001"/>
+  <testcase name="validatesRecordLimitBeforeAllocatingTracks" classname="com.picolas.openmusic.BackupPolicyTest" time="0.038"/>
+  <testcase name="importedRightsAndUrisAreNeverTrusted" classname="com.picolas.openmusic.BackupPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

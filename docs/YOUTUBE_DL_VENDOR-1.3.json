@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/ytdl-org/youtube-dl",
+  "commit": "956b8c585591b401a543e409accb163eeaaa1193",
+  "version": "2025.4.7",
+  "license": "Unlicense",
+  "path": "app/src/main/python/youtube_dl",
+  "files": 844,
+  "content_sha256": "dc3942e60d3b22f7e24e95b2cdf90b24a45660b6d41d8fffdcbe682ec64717f8",
+  "modifications": "None; Open Music integration is in openmusic_audio.py",
+  "module_version": "2025.04.07"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "Open-Music-1.4.apk",
+  "bytes": 8007529,
+  "sha256": "ce127f719f5d7121b623004e13f0a2a13168df327d77623b0f4db85debc60091",
+  "package": "com.picolas.openmusic.next",
+  "versionCode": 5,
+  "versionName": "1.4.0",
+  "jvm_tests_passed": 24,
+  "android_instrumented_tests_passed": 7,
+  "android_test_api": 35
+}

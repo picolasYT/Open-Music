@@ -1,0 +1,12 @@
+package com.picolas.openmusic;
+import org.junit.Test;import org.json.*;import static org.junit.Assert.*;
+public class ProviderPolicyTest {
+    private JSONObject base()throws Exception{return new JSONObject("{\"id\":\"abc\",\"title\":\"Song\",\"is_streamable\":true,\"is_stream_gated\":false,\"is_available\":true,\"user\":{\"name\":\"Artist\"}}");}
+    @Test public void gatedTracksCannotBePlayedOrDownloaded()throws Exception{JSONObject j=base().put("is_stream_gated",true).put("is_downloadable",true).put("is_download_gated",false).put("download",new JSONObject().put("url","https://audio.test/file"));Track t=AudiusProvider.parse(j);assertFalse(t.playable());assertFalse(t.downloadAllowed);}
+    @Test public void downloadsNeedExplicitUngatedPublicUrl()throws Exception{JSONObject j=base().put("is_downloadable",true).put("is_download_gated",false);assertFalse(AudiusProvider.parse(j).downloadAllowed);j.put("download",new JSONObject().put("url","https://audio.test/file"));assertTrue(AudiusProvider.parse(j).downloadAllowed);j.put("is_download_gated",true);assertFalse(AudiusProvider.parse(j).downloadAllowed);}
+    @Test public void missingCapabilityFieldsFailClosed()throws Exception{Track t=AudiusProvider.parse(new JSONObject("{\"id\":\"123\"}"));assertFalse(t.playable());assertFalse(t.downloadAllowed);}
+    @Test public void deletedTracksHaveNoStream()throws Exception{assertFalse(AudiusProvider.parse(base().put("is_delete",true)).playable());}
+    @Test public void downloadedTrackRoundTripsWithoutLosingLocalUri()throws Exception{Track t=AudiusProvider.parse(base());t.local="content://documents/audio/4";t.downloadAllowed=false;Track restored=Track.decode(Track.encode(java.util.List.of(t))).get(0);assertEquals(t.key(),restored.key());assertEquals(t.local,restored.local);assertTrue(restored.playable());}
+    @Test public void importedMetadataNeverGrantsStreamOrDownloadRights()throws Exception{String raw="[{\"name\":\"Song\",\"artists\":[\"A\",\"B\"],\"song_id\":\"x\",\"downloadAllowed\":true,\"stream\":\"https://untrusted/audio\",\"download\":\"https://untrusted/download\"}]";Track t=SpotdlImport.parse(raw).get(0);assertEquals("A, B",t.artist);assertFalse(t.playable());assertFalse(t.downloadAllowed);assertEquals("",t.download);}
+    @Test public void malformedSpotdlInputFails()throws Exception{try{SpotdlImport.parse("{\"url\":\"https://arbitrary\"}");fail("Must reject non-playlist JSON");}catch(JSONException expected){}}
+}

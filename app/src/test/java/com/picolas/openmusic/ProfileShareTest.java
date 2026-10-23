@@ -1,0 +1,18 @@
+package com.picolas.openmusic;
+import org.junit.Test;
+import static org.junit.Assert.*;
+import java.util.*;
+import java.io.*;
+import java.util.zip.*;
+import java.nio.charset.StandardCharsets;
+import org.json.*;
+
+public class ProfileShareTest {
+    private ProfileShare.Snapshot sample(){ProfileShare.Snapshot s=new ProfileShare.Snapshot();s.name="Picolas";s.bio="Mi música";s.created=123;List<Track> list=new ArrayList<>();for(int i=0;i<40;i++){Track t=new Track();t.provider="youtube";t.id=String.format(Locale.ROOT,"%011d",i);t.title="Canción "+i;t.artist="Milo J";t.local="file:///private/song";t.stream="https://private.invalid/token";t.downloadAllowed=true;list.add(t);}s.playlists.put("Mis temas",list);s.totalPlaylists=1;s.totalTracks=list.size();return s;}
+    @Test public void roundTripContainsNoAudioRightsOrFilePaths()throws Exception{String json=ProfileShare.json(sample());assertFalse(json.contains("private"));ProfileShare.Snapshot decoded=ProfileShare.parse(json);Track t=decoded.playlists.get("Mis temas").get(0);assertTrue(t.local.isEmpty());assertTrue(t.stream.isEmpty());assertFalse(t.downloadAllowed);assertEquals(40,decoded.included());}
+    @Test public void qrIsBoundedAndDisclosesOmittedSongs()throws Exception{String qr=ProfileShare.qr(sample());assertTrue(qr.length()<=ProfileShare.QR_LIMIT);ProfileShare.Snapshot decoded=ProfileShare.decode(qr);assertEquals("Picolas",decoded.name);assertEquals(40,decoded.totalTracks);assertTrue(decoded.included()<=6);assertEquals(1,decoded.totalPlaylists);}
+    @Test public void foreignProviderAndForgedUrisAreRejectedOrStripped()throws Exception{JSONObject root=new JSONObject(ProfileShare.json(sample()));JSONObject t=root.getJSONArray("playlists").getJSONObject(0).getJSONArray("tracks").getJSONObject(0);t.put("local","content://private/audio").put("stream","https://attacker.invalid").put("downloadAllowed",true);assertTrue(ProfileShare.parse(root.toString()).playlists.get("Mis temas").get(0).local.isEmpty());t.put("provider","evil");try{ProfileShare.parse(root.toString());fail("must reject foreign provider");}catch(JSONException expected){}}
+    @Test public void decompressionBombIsRejected()throws Exception{ByteArrayOutputStream out=new ByteArrayOutputStream();try(DeflaterOutputStream z=new DeflaterOutputStream(out)){z.write(new byte[600*1024]);}String uri=ProfileShare.PREFIX+Base64.getUrlEncoder().withoutPadding().encodeToString(out.toByteArray());try{ProfileShare.decode(uri);fail("must reject large inflated input");}catch(IOException expected){assertTrue(expected.getMessage().contains("grande"));}}
+    @Test public void invalidQrIsRejected()throws Exception{try{ProfileShare.decode(ProfileShare.PREFIX+"!!!!");fail("must reject invalid base64");}catch(IOException expected){}}
+    @Test public void generatedQrCanBeReadByTheActualDecoder()throws Exception{String text=ProfileShare.qr(sample());com.google.zxing.common.BitMatrix matrix=new com.google.zxing.qrcode.QRCodeWriter().encode(text,com.google.zxing.BarcodeFormat.QR_CODE,900,900);int[] pixels=new int[900*900];for(int y=0;y<900;y++)for(int x=0;x<900;x++)pixels[y*900+x]=matrix.get(x,y)?0xff000000:0xffffffff;com.google.zxing.BinaryBitmap image=new com.google.zxing.BinaryBitmap(new com.google.zxing.common.HybridBinarizer(new com.google.zxing.RGBLuminanceSource(900,900,pixels)));assertEquals(text,new com.google.zxing.qrcode.QRCodeReader().decode(image).getText());}
+}

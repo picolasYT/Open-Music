@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/TeamNewPipe/NewPipeExtractor",
+  "version": "v0.26.5",
+  "commit_short": "f9e6bb8",
+  "artifact": "com.github.TeamNewPipe:NewPipeExtractor:v0.26.5",
+  "license": "GPL-3.0-or-later",
+  "modified": false,
+  "source_sha256": "59a67ac0391985f2881f9dff6c4973b9ac776b8fe9ae52eab667354c6019b293"
+}

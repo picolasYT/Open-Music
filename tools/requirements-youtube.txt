@@ -1,0 +1,2 @@
+# Pinned upstream snapshot: official stable 2021.12.17 has known issues.
+youtube_dl @ https://github.com/ytdl-org/youtube-dl/archive/956b8c585591b401a543e409accb163eeaaa1193.zip

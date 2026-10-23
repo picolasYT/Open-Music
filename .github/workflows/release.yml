@@ -1,0 +1,53 @@
+name: Publish Open Music 1.5
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'distribution/**'
+      - 'app/**'
+      - 'gradle/**'
+      - 'gradle.properties'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - '.github/workflows/release.yml'
+permissions:
+  contents: write
+concurrency:
+  group: open-music-release-1.5
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile and validate
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+      - name: Prepare release assets
+        run: |
+          mkdir release-assets
+          cd distribution
+          sha256sum --check SHA256SUMS
+          cd ..
+          cp distribution/Open-Music-1.5.apk release-assets/Open-Music-1.5.apk
+          git archive --format=zip --output=release-assets/Open-Music-source.zip HEAD
+          cd release-assets
+          sha256sum Open-Music-1.5.apk Open-Music-source.zip > SHA256SUMS
+      - name: Publish APK and source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if gh release view v1.5.0 >/dev/null 2>&1; then
+            echo 'Release v1.5.0 already exists; preserving it.'
+            exit 0
+          fi
+          gh release create v1.5.0 release-assets/Open-Music-1.5.apk release-assets/Open-Music-source.zip release-assets/SHA256SUMS --target "$GITHUB_SHA" --title "Open Music 1.5" --notes-file docs/RELEASE-1.5.md
