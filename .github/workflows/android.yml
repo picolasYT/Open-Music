@@ -29,12 +29,15 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.picolas.openmusic.ProfileDeviceTest
+          script: |
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.picolas.openmusic.ProfileDeviceTest,com.picolas.openmusic.CustomizationDeviceTest
+            adb pull /sdcard/Android/data/com.picolas.openmusic.next/files qa-screens || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Open-Music-1.5-CI
+          name: Open-Music-1.6-CI
           path: |
+            qa-screens/
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             app/build/reports/androidTests/
