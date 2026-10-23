@@ -9,3 +9,6 @@ __pycache__/
 
 signing/
 *.private.json
+
+*.idsig
+distribution/Open-Music-1.6.0.apk

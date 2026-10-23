@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="com.picolas.openmusic.ProfileDeviceTest" tests="7" failures="0" errors="0" skipped="0" time="6.791" timestamp="2026-10-23T10:30:17" hostname="localhost">
+  <properties>
+    <property name="device" value="emulator-5554 - 15" />
+    <property name="flavor" value="" />
+    <property name="project" value=":app" />
+  </properties>
+  <testcase name="playlistArtDescriptionAndOrderPersist" classname="com.picolas.openmusic.ProfileDeviceTest" time="0.037" />
+  <testcase name="databaseMigrationRetainsExistingPlaylist" classname="com.picolas.openmusic.ProfileDeviceTest" time="0.001" />
+  <testcase name="selectedPhotoIsCopiedAndPlaylistScreenRenders" classname="com.picolas.openmusic.ProfileDeviceTest" time="2.606" />
+  <testcase name="firstLaunchTutorialCompletesAndIsRemembered" classname="com.picolas.openmusic.ProfileDeviceTest" time="0.885" />
+  <testcase name="photosTemplatesAndPortableProfilePersist" classname="com.picolas.openmusic.CustomizationDeviceTest" time="0.639" />
+  <testcase name="editorCancelSaveAndUpdatePrompt" classname="com.picolas.openmusic.CustomizationDeviceTest" time="0.634" />
+  <testcase name="automaticCheckPromptsAndThrottlesOverHttps" classname="com.picolas.openmusic.CustomizationDeviceTest" time="0.453" />
+</testsuite>
