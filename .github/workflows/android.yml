@@ -32,17 +32,7 @@ jobs:
           script: |
             ./gradlew :app:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true -Pandroid.testInstrumentationRunnerArguments.class=com.picolas.openmusic.ProfileDeviceTest,com.picolas.openmusic.CustomizationDeviceTest
             adb pull /sdcard/Android/data/com.picolas.openmusic.next/files qa-screens
-            if [ -d distribution/apk-1.6.0 ]; then
-              python3 tools/assemble_release.py
-              adb uninstall com.picolas.openmusic.next
-              cp distribution/Open-Music-1.5.1.apk previous.apk
-              adb install previous.apk
-              adb shell run-as com.picolas.openmusic.next mkdir -p files
-              adb shell run-as com.picolas.openmusic.next sh -c '"echo upgrade-keeps-data > files/upgrade-check.txt"'
-              adb install -r distribution/Open-Music-1.6.0.apk
-              adb shell run-as com.picolas.openmusic.next cat files/upgrade-check.txt | grep -Fx upgrade-keeps-data
-              adb shell am start -n com.picolas.openmusic.next/com.picolas.openmusic.MainActivity
-            fi
+            bash tools/verify_upgrade.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
