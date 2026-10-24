@@ -1,11 +1,12 @@
 {
   "version": "1.7.0",
   "versionCode": 10,
-  "source_commit": "8d302e1e32f8f05432c4a2a86c8110f791b6ae39",
+  "source_commit": "cbd16060ccacf592b58bb9597d220e407c20fe8d",
+  "source_fingerprint": "e9a14a016e9dc3bf48281fd70f96a2863dfde1bd04523dff55210cf669291f3c",
   "base_version": "1.6.1",
   "base_sha256": "db05776cc926bfda7b7c5901d89bbb9ea3ab50f0b0bb7dfa34aa93762e913eed",
-  "patch_sha256": "881703728a65af68dd6dd7d45edd8aa402f962101ae7f2fc4ebf54fd1497b467",
-  "sha256": "7b7ff854da061bfe8a86dce4c3b7b7f7d32c972f11f4ab17d623de155cb65b2a",
+  "patch_sha256": "8c0365266424dd1cd96ab908faf9cb385f8f57422e35badbf3e2faa91a8dc645",
+  "sha256": "f8e8666190bcba0f0bd58f6484ea2d4a023a8b214df9f12a1875671b765366f6",
   "bytes": 8858573,
   "parts": 36,
   "certificate_sha256": "db235fcb26e84a58ab5b7d7abbe866bb0cad90eaeb820e0a9966a0681da45bed"
