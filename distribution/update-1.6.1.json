@@ -1,0 +1,11 @@
+{
+  "version": "1.6.1",
+  "versionCode": 9,
+  "source_commit": "70e707af8080eb5be7bbf903f3d7616046f99b29",
+  "base_sha256": "2a56321cbcaa8e7bc354b3771341097f114d1c94fb026dd9fdebf685db7b6cf0",
+  "patch_sha256": "54f604343c8183001942a57463f7697617fc7dfb11728123d853733d20c60a55",
+  "sha256": "db05776cc926bfda7b7c5901d89bbb9ea3ab50f0b0bb7dfa34aa93762e913eed",
+  "bytes": 8362419,
+  "parts": 3,
+  "certificate_sha256": "db235fcb26e84a58ab5b7d7abbe866bb0cad90eaeb820e0a9966a0681da45bed"
+}
