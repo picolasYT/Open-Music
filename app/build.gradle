@@ -4,7 +4,7 @@ def usePrivateSigning = signingFile != null && !signingFile.isEmpty()
 android {
     namespace 'com.picolas.openmusic'
     compileSdk 35
-    defaultConfig { applicationId 'com.picolas.openmusic.next'; minSdk 26; targetSdk 35; versionCode 9; versionName '1.6.1'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner' }
+    defaultConfig { applicationId 'com.picolas.openmusic.next'; minSdk 26; targetSdk 35; versionCode 10; versionName '1.7.0'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner' }
     compileOptions { coreLibraryDesugaringEnabled true; sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     signingConfigs { if (usePrivateSigning) { development { storeFile file(signingFile); storePassword System.getenv('OPEN_MUSIC_KEYSTORE_PASSWORD'); keyAlias System.getenv('OPEN_MUSIC_KEY_ALIAS'); keyPassword System.getenv('OPEN_MUSIC_KEY_PASSWORD') } } }
     buildTypes { debug { if (usePrivateSigning) signingConfig signingConfigs.development }; release { minifyEnabled false; if (usePrivateSigning) signingConfig signingConfigs.development } }
@@ -21,6 +21,7 @@ dependencies {
     implementation 'androidx.media3:media3-exoplayer:1.8.0'
     implementation 'androidx.media3:media3-exoplayer-hls:1.8.0'
     implementation 'androidx.media3:media3-session:1.8.0'
+    implementation 'androidx.media3:media3-ui:1.8.0'
     implementation 'androidx.media3:media3-datasource-okhttp:1.8.0'
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'

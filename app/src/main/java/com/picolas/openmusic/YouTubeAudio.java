@@ -11,10 +11,11 @@ final class YouTubeAudio {
  interface Lookup {AudioAddress resolve(String id)throws IOException;}
  static DataSource.Factory factory(Context context,DataSource.Factory upstream){return factory(upstream,YouTubeAudio::resolve);}
  static DataSource.Factory factory(DataSource.Factory upstream,Lookup lookup){return new ResolvingDataSource.Factory(upstream,spec->{
-  if(!"openmusic-youtube".equals(spec.uri.getScheme()))return spec;
+  String scheme=spec.uri.getScheme();boolean picture=YouTubeVideo.VIDEO.equals(scheme),soundtrack=YouTubeVideo.AUDIO.equals(scheme);
+  if(!"openmusic-youtube".equals(scheme)&&!picture&&!soundtrack)return spec;
   String id=spec.uri.getLastPathSegment();if(!YouTubeProvider.validId(id))throw new IOException("OpenMusic: Identificador de YouTube no válido.");
   if(Thread.currentThread().isInterrupted())throw new InterruptedIOException("Cancelado");
-  AudioAddress address=lookup.resolve(id);Map<String,String> headers=new HashMap<>(spec.httpRequestHeaders);headers.putAll(address.headers);
+  AudioAddress address=picture?YouTubeVideo.resolve(id).video:soundtrack?YouTubeVideo.resolve(id).audio:lookup.resolve(id);Map<String,String> headers=new HashMap<>(spec.httpRequestHeaders);headers.putAll(address.headers);
   if(Thread.currentThread().isInterrupted())throw new InterruptedIOException("Cancelado");
   return spec.withUri(Uri.parse(address.url)).withRequestHeaders(headers);
  });}

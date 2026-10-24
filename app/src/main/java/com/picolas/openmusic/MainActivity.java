@@ -16,6 +16,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 import androidx.media3.common.*;
 import androidx.media3.session.*;
+import androidx.media3.ui.PlayerView;
 import androidx.media3.session.MediaController;
 import androidx.recyclerview.widget.*;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -27,6 +28,7 @@ import java.util.concurrent.*;
 import static com.picolas.openmusic.Ui.*;
 
 /** Native Android UI. All actions are backed by a provider, local storage or the media session. */
+@androidx.annotation.OptIn(markerClass=androidx.media3.common.util.UnstableApi.class)
 public final class MainActivity extends Activity {
     private MusicStore store;
     private SocialScreens social;
@@ -51,6 +53,11 @@ public final class MainActivity extends Activity {
     private List<Track> visible=new ArrayList<>();
     private TextView playerTitle,playerArtist,playerTime,playerDuration,playerStatus;
     private ImageView playerCover;
+    private PlayerView videoView,fullscreenVideo;
+    private LinearLayout videoPanel,modeRow;
+    private Dialog videoDialog;
+    private boolean foreground=false;
+    private String displayedVideoKey="";
     private ImageButton fullPlay,fullHeart,fullShuffle,fullRepeat;
     private SeekBar seek;
     private boolean seeking=false;
@@ -83,14 +90,18 @@ public final class MainActivity extends Activity {
         controllerFuture=new MediaController.Builder(this,new SessionToken(this,new ComponentName(this,PlaybackService.class))).buildAsync();
         controllerFuture.addListener(()->{try{if(destroyed)return;player=controllerFuture.get();player.addListener(new Player.Listener(){
             @Override public void onEvents(Player p,Player.Events e){updatePlayback();}
-            @Override public void onPlayerError(PlaybackException e){String message=YouTubeAudio.userMessage(e);toast(message);if(playerStatus!=null)playerStatus.setText(message+" · tocá Play para reintentar");}
+            @Override public void onPlayerError(PlaybackException e){
+                if(YouTubeVideo.active(player.getCurrentMediaItem())){toast("No se pudo cargar el video. Volviendo a Música. "+YouTubeAudio.userMessage(e));ui.post(()->setVideoMode(false));return;}
+                String message=YouTubeAudio.userMessage(e);toast(message);if(playerStatus!=null)playerStatus.setText(message+" · tocá Play para reintentar");
+            }
         });if(page.equals("player")){content.removeAllViews();playerScreen();}updatePlayback();}catch(Exception e){toast("No se pudo iniciar el reproductor");}},this::runOnUiThread);
         ui.post(ticker);if(getIntent().getData()!=null)social.open(getIntent().getData().toString());else ui.post(()->social.onboard());
     }
     @Override protected void onSaveInstanceState(Bundle b){super.onSaveInstanceState(b);b.putString("page",page);b.putString("query",query);b.putLong("coverTarget",coverTarget);b.putBoolean("exportProfilePhotos",exportProfilePhotos);}
-    @Override protected void onResume(){super.onResume();if(store!=null)for(String s:Downloads.reconcile(this))toast(s);if(updates!=null)updates.resume();}
+    @Override protected void onResume(){super.onResume();foreground=true;if(store!=null)for(String s:Downloads.reconcile(this))toast(s);if(updates!=null)updates.resume();}
+    @Override protected void onStop(){foreground=false;closeVideoSurface();setVideoMode(false);super.onStop();}
     @Override protected void onPause(){if(updates!=null)updates.pause();super.onPause();}
-    @Override protected void onDestroy(){if(updates!=null)updates.close();destroyed=true;if(social!=null)social.close();generation++;ui.removeCallbacksAndMessages(null);if(controllerFuture!=null)MediaController.releaseFuture(controllerFuture);io.shutdownNow();searchIo.shutdownNow();super.onDestroy();}
+    @Override protected void onDestroy(){closeVideoSurface();if(updates!=null)updates.close();destroyed=true;if(social!=null)social.close();generation++;ui.removeCallbacksAndMessages(null);if(controllerFuture!=null)MediaController.releaseFuture(controllerFuture);io.shutdownNow();searchIo.shutdownNow();super.onDestroy();}
     private int d(float n){return dp(this,n);}
     private void toast(String s){if(!destroyed)Toast.makeText(this,s,Toast.LENGTH_LONG).show();}
     private LinearLayout.LayoutParams lp(int w,int h){return new LinearLayout.LayoutParams(w<0?w:d(w),h<0?h:d(h));}
@@ -110,7 +121,7 @@ public final class MainActivity extends Activity {
         LinearLayout outer=col(this);pad(outer,12,0);mini=col(this);mini.setBackground(panel(this));LinearLayout row=row(this);pad(row,8,4);Track empty=new Track();empty.id="empty";miniCover=cover(this,empty,42);row.addView(miniCover);LinearLayout names=col(this);pad(names,12,0);miniTitle=text(this,"Elegí tu próxima canción",13,TEXT,true);miniTitle.setSingleLine(true);miniTitle.setEllipsize(TextUtils.TruncateAt.END);miniArtist=text(this,"Open Music",11,MUTED,false);miniArtist.setSingleLine(true);add(names,miniTitle);gap(names,5);add(names,miniArtist);row.addView(names,new LinearLayout.LayoutParams(0,-2,1));miniPlay=icon(this,"play","Reproducir o pausar",this::togglePlay);row.addView(miniPlay,lp(48,48));row.addView(icon(this,"next","Siguiente canción",()->{if(player!=null)player.seekToNextMediaItem();}),lp(44,48));mini.addView(row);miniProgress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);miniProgress.setProgressTintList(ColorStateList.valueOf(CORAL));miniProgress.setProgressBackgroundTintList(ColorStateList.valueOf(BORDER));mini.addView(miniProgress,lp(-1,2));mini.setOnClickListener(v->navigate("player"));outer.addView(mini,lp(-1,-2));root.addView(outer,lp(-1,-2));outer.setVisibility(View.GONE);mini.setTag(outer);
     }
     private void renderNav(){nav.removeAllViews();String[][] items={{"home","home","Inicio"},{"search","search","Buscar"},{"library","library","Biblioteca"},{"offline","download","Offline"},{"create","plus","Crear"}};for(String[] item:items){boolean active=page.equals(item[0])||(item[0].equals("library")&&(page.equals("saved")||page.equals("profile")))||(item[0].equals("search")&&page.equals("collection"));LinearLayout box=col(this);box.setGravity(Gravity.CENTER);ImageView iv=new ImageView(this);iv.setImageDrawable(new Symbol(item[1],active?TEXT:MUTED));box.addView(iv,lp(22,22));gap(box,6);TextView t=text(this,item[2],10,active?TEXT:MUTED,active);box.addView(t);box.setContentDescription(item[2]);box.setOnClickListener(v->{if(item[0].equals("create"))newPlaylist(null);else navigate(item[0]);});nav.addView(box,new LinearLayout.LayoutParams(0,-1,1));}}
-    private void navigate(String next){refreshProfileAvatar();cancelSearches();generation++;page=next;downloadJobs=null;downloadRows.clear();nav.setVisibility(next.equals("player")?View.GONE:View.VISIBLE);((View)titleBar.getParent()).setVisibility(next.equals("player")?View.GONE:View.VISIBLE);openPlaylist=-1;playerTitle=null;playerCover=null;fullPlay=null;seek=null;if(pendingSearch!=null)ui.removeCallbacks(pendingSearch);((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(content.getWindowToken(),0);content.removeAllViews();renderNav();switch(next){case "search":searchScreen();break;case "library":library();break;case "offline":offline();break;case "settings":settings();break;case "profile":content.addView(social.profileView());break;case "player":playerScreen();break;default:page="home";home();}updatePlayback();content.setAlpha(.5f);content.animate().alpha(1).setDuration(180).start();}
+    private void navigate(String next){closeVideoSurface();setVideoMode(false);videoView=null;videoPanel=null;modeRow=null;displayedVideoKey="";refreshProfileAvatar();cancelSearches();generation++;page=next;downloadJobs=null;downloadRows.clear();nav.setVisibility(next.equals("player")?View.GONE:View.VISIBLE);((View)titleBar.getParent()).setVisibility(next.equals("player")?View.GONE:View.VISIBLE);openPlaylist=-1;playerTitle=null;playerCover=null;fullPlay=null;seek=null;if(pendingSearch!=null)ui.removeCallbacks(pendingSearch);((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(content.getWindowToken(),0);content.removeAllViews();renderNav();switch(next){case "search":searchScreen();break;case "library":library();break;case "offline":offline();break;case "settings":settings();break;case "profile":content.addView(social.profileView());break;case "player":playerScreen();break;default:page="home";home();}updatePlayback();content.setAlpha(.5f);content.animate().alpha(1).setDuration(180).start();}
     private ScrollView scroll(LinearLayout box){ScrollView s=new ScrollView(this);s.setFillViewport(true);s.addView(box);content.addView(s,new FrameLayout.LayoutParams(-1,-1));return s;}
     private void home(){
         LinearLayout h=section();LocalProfile profile=social.profile;
@@ -227,14 +238,62 @@ public final class MainActivity extends Activity {
     private Track current(){return player==null||player.getCurrentMediaItem()==null?null:store.track(player.getCurrentMediaItem().mediaId);}
     private static String time(long ms){long sec=Math.max(0,ms/1000);return String.format(Locale.ROOT,"%d:%02d",sec/60,sec%60);}
     private final Runnable ticker=new Runnable(){public void run(){if(destroyed)return;updatePosition();if(page.equals("offline"))pollDownloads();ui.postDelayed(this,700);}};
-    private void updatePlayback(){Track t=current();((View)mini.getTag()).setVisibility(t==null||page.equals("player")?View.GONE:View.VISIBLE);if(t==null)return;miniTitle.setText(t.title);miniArtist.setText(t.artist);bindCover(miniCover,t);miniPlay.setImageDrawable(new Symbol(player.isPlaying()?"pause":"play",TEXT));miniPlay.setContentDescription(player.isPlaying()?"Pausar":"Reproducir");if(playerTitle!=null){playerTitle.setText(t.title);playerArtist.setText(t.artist);bindCover(playerCover,t);fullPlay.setImageDrawable(new Symbol(player.isPlaying()?"pause":"play",BG));fullHeart.setImageDrawable(new Symbol("heart",store.favorite(t)?CORAL:TEXT));fullShuffle.setImageDrawable(new Symbol("shuffle",player.getShuffleModeEnabled()?CORAL:MUTED));fullRepeat.setImageDrawable(new Symbol("repeat",player.getRepeatMode()==Player.REPEAT_MODE_OFF?MUTED:CORAL));fullRepeat.setContentDescription(player.getRepeatMode()==Player.REPEAT_MODE_ONE?"Repetir una: activado":player.getRepeatMode()==Player.REPEAT_MODE_ALL?"Repetir cola: activado":"Repetir: desactivado");playerStatus.setText(player.getPlayerError()!=null?YouTubeAudio.userMessage(player.getPlayerError())+" · tocá Play para reintentar":player.getPlaybackState()==Player.STATE_BUFFERING?"Preparando tu canción…":providerName(t)+(t.local.isEmpty()?" · Online":" · Offline")+(player.getRepeatMode()==Player.REPEAT_MODE_ONE?" · Repetir 1":""));}updatePosition();}
+    private void updatePlayback(){Track t=current();((View)mini.getTag()).setVisibility(t==null||page.equals("player")?View.GONE:View.VISIBLE);if(t==null){if(videoView!=null)videoView.setPlayer(null);return;}updateVideoUi(t);miniTitle.setText(t.title);miniArtist.setText(t.artist);bindCover(miniCover,t);miniPlay.setImageDrawable(new Symbol(player.isPlaying()?"pause":"play",TEXT));miniPlay.setContentDescription(player.isPlaying()?"Pausar":"Reproducir");if(playerTitle!=null){playerTitle.setText(t.title);playerArtist.setText(t.artist);bindCover(playerCover,t);fullPlay.setImageDrawable(new Symbol(player.isPlaying()?"pause":"play",BG));fullHeart.setImageDrawable(new Symbol("heart",store.favorite(t)?CORAL:TEXT));fullShuffle.setImageDrawable(new Symbol("shuffle",player.getShuffleModeEnabled()?CORAL:MUTED));fullRepeat.setImageDrawable(new Symbol("repeat",player.getRepeatMode()==Player.REPEAT_MODE_OFF?MUTED:CORAL));fullRepeat.setContentDescription(player.getRepeatMode()==Player.REPEAT_MODE_ONE?"Repetir una: activado":player.getRepeatMode()==Player.REPEAT_MODE_ALL?"Repetir cola: activado":"Repetir: desactivado");playerStatus.setText(player.getPlayerError()!=null?YouTubeAudio.userMessage(player.getPlayerError())+" · tocá Play para reintentar":player.getPlaybackState()==Player.STATE_BUFFERING?(YouTubeVideo.active(player.getCurrentMediaItem())?"Cargando video…":"Preparando tu canción…"):providerName(t)+(t.local.isEmpty()?" · Online":" · Offline")+(player.getRepeatMode()==Player.REPEAT_MODE_ONE?" · Repetir 1":""));}updatePosition();}
     private void updatePosition(){if(player==null)return;long pos=Math.max(0,player.getCurrentPosition()),dur=player.getDuration();if(dur<=0||dur==C.TIME_UNSET)dur=current()==null?0:current().duration*1000L;miniProgress.setMax(1000);miniProgress.setProgress(dur<=0?0:(int)(pos*1000/dur));if(seek!=null){seek.setMax(1000);if(!seeking)seek.setProgress(dur<=0?0:(int)(pos*1000/dur));playerTime.setText(time(pos));playerDuration.setText(time(dur));}if(lyricsDialog!=null&&lyricsDialog.isShowing()&&current()!=null&&current().key().equals(lyricsKey)&&!synced.isEmpty()){int n=Lyrics.active(synced,pos);if(n!=lyricIndex){lyricIndex=n;for(int i=0;i<lyricLines.getChildCount();i++){TextView line=(TextView)lyricLines.getChildAt(i);line.setTextColor(i==n?TEXT:MUTED);line.setAlpha(i==n?1:.6f);}if(n>=0){View line=lyricLines.getChildAt(n);if(lyricLines.getParent() instanceof ScrollView)((ScrollView)lyricLines.getParent()).smoothScrollTo(0,Math.max(0,line.getTop()-d(130)));}}}}
     private void playerScreen(){Track t=current();if(t==null){LinearLayout b=section();gap(b,36);add(b,heading("Todo empieza\ncon una canción.",32));gap(b,20);add(b,button(this,"Buscar música",()->navigate("search")));scroll(b);return;}LinearLayout b=section();pad(b,24,12);LinearLayout top=row(this);top.addView(icon(this,"down","Volver al inicio",()->navigate("home")),lp(44,44));TextView now=label("ESTÁS ESCUCHANDO");now.setGravity(Gravity.CENTER);top.addView(now,new LinearLayout.LayoutParams(0,-2,1));top.addView(icon(this,"more","Opciones de la canción",()->{Track a=current();if(a!=null)trackMenu(a,-1);}),lp(44,44));add(b,top);gap(b,12);
-        playerCover=cover(this,t,300);int width=Math.min(Math.min(getResources().getDisplayMetrics().widthPixels-d(48),d(300)),(int)(getResources().getDisplayMetrics().heightPixels*.30f));LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(width,width);cp.gravity=Gravity.CENTER_HORIZONTAL;b.addView(playerCover,cp);gap(b,20);
+        playerCover=cover(this,t,300);int width=Math.min(Math.min(getResources().getDisplayMetrics().widthPixels-d(48),d(300)),(int)(getResources().getDisplayMetrics().heightPixels*.30f));LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(width,width);cp.gravity=Gravity.CENTER_HORIZONTAL;b.addView(playerCover,cp);
+        videoPanel=col(this);videoPanel.setVisibility(View.GONE);
+        videoView=new PlayerView(this);videoView.setUseController(false);videoView.setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING);videoView.setContentDescription("Video de la canción");
+        int videoHeight=(getResources().getDisplayMetrics().widthPixels-d(48))*9/16;
+        videoPanel.addView(videoView,new LinearLayout.LayoutParams(-1,videoHeight));
+        TextView expand=chip(this,"Pantalla completa",false,this::showFullscreenVideo);add(videoPanel,expand);add(b,videoPanel);gap(b,12);
+        modeRow=row(this);add(b,modeRow);gap(b,20);
         LinearLayout names=row(this);LinearLayout words=col(this);playerTitle=heading(t.title,25);playerTitle.setMaxLines(2);playerArtist=text(this,t.artist,15,MUTED,false);add(words,playerTitle);gap(words,8);add(words,playerArtist);names.addView(words,new LinearLayout.LayoutParams(0,-2,1));fullHeart=icon(this,"heart","Guardar o quitar favorito",()->{Track a=current();if(a!=null){store.toggleFavorite(a);updatePlayback();}});names.addView(fullHeart,lp(48,48));add(b,names);gap(b,12);
         seek=new SeekBar(this);seek.setProgressTintList(ColorStateList.valueOf(TEXT));seek.setThumbTintList(ColorStateList.valueOf(TEXT));seek.setProgressBackgroundTintList(ColorStateList.valueOf(BORDER));seek.setPadding(0,0,0,0);seek.setContentDescription("Posición de reproducción");seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onStartTrackingTouch(SeekBar s){seeking=true;}public void onStopTrackingTouch(SeekBar s){if(player!=null){long dur=player.getDuration();if(dur>0)player.seekTo(dur*s.getProgress()/1000);}seeking=false;}public void onProgressChanged(SeekBar s,int p,boolean user){}});add(b,seek);LinearLayout times=row(this);playerTime=text(this,"0:00",11,MUTED,false);times.addView(playerTime,new LinearLayout.LayoutParams(0,-2,1));playerDuration=text(this,"0:00",11,MUTED,false);times.addView(playerDuration);add(b,times);gap(b,12);
         LinearLayout controls=row(this);controls.setGravity(Gravity.CENTER);fullShuffle=icon(this,"shuffle","Activar o desactivar aleatorio",()->{if(player!=null){player.setShuffleModeEnabled(!player.getShuffleModeEnabled());updatePlayback();}});controls.addView(fullShuffle,new LinearLayout.LayoutParams(0,d(52),1));controls.addView(icon(this,"prev","Anterior",()->{if(player!=null)player.seekToPrevious();}),new LinearLayout.LayoutParams(0,d(52),1));fullPlay=icon(this,"play","Reproducir o pausar",this::togglePlay);fullPlay.setBackground(bg(TEXT,d(40)));fullPlay.setPadding(d(19),d(19),d(19),d(19));controls.addView(fullPlay,lp(72,72));controls.addView(icon(this,"next","Siguiente",()->{if(player!=null)player.seekToNextMediaItem();}),new LinearLayout.LayoutParams(0,d(52),1));fullRepeat=icon(this,"repeat","Cambiar modo de repetición",()->{if(player!=null){player.setRepeatMode((player.getRepeatMode()+1)%3);updatePlayback();}});controls.addView(fullRepeat,new LinearLayout.LayoutParams(0,d(52),1));add(b,controls);gap(b,16);
         LinearLayout tools=row(this);TextView lyrics=chip(this,"Letras",false,()->{Track a=current();if(a!=null)showLyrics(a);});tools.addView(lyrics,new LinearLayout.LayoutParams(0,-2,1));TextView queue=chip(this,"Cola",false,this::showQueue);LinearLayout.LayoutParams qp=new LinearLayout.LayoutParams(0,-2,1);qp.leftMargin=d(10);tools.addView(queue,qp);tools.addView(icon(this,"clock","Temporizador de apagado",this::sleepTimer),lp(48,48));add(b,tools);gap(b,12);playerStatus=text(this,"",11,MUTED,false);playerStatus.setGravity(Gravity.CENTER);add(b,playerStatus);scroll(b);updatePlayback();}
+    private void setVideoMode(boolean enabled){
+        if(player==null||player.getCurrentMediaItem()==null)return;
+        if(enabled&&(!foreground||!page.equals("player")))return;
+        Track t=current();if(enabled&&!YouTubeVideo.available(t)){toast("El video está disponible para canciones de YouTube.");return;}
+        if(t==null||YouTubeVideo.active(player.getCurrentMediaItem())==enabled)return;
+        int index=player.getCurrentMediaItemIndex();long position=Math.max(0,player.getCurrentPosition());boolean playing=player.getPlayWhenReady();
+        if(videoView!=null)videoView.setPlayer(null);
+        if(!enabled)closeVideoSurface();
+        // Only this queue entry changes. Downloads remain untouched; video needs a connection.
+        player.replaceMediaItem(index,PlaybackService.item(t,enabled));
+        player.seekTo(index,position);player.prepare();player.setPlayWhenReady(playing);updatePlayback();
+    }
+    private void updateVideoUi(Track t){
+        if(modeRow==null)return;
+        boolean active=YouTubeVideo.active(player.getCurrentMediaItem());
+        String key=t.key()+":"+active;
+        if(!key.equals(displayedVideoKey)){
+            displayedVideoKey=key;modeRow.removeAllViews();modeRow.setGravity(Gravity.CENTER);
+            TextView music=chip(this,"Música",!active,()->setVideoMode(false));modeRow.addView(music,new LinearLayout.LayoutParams(0,d(44),1));
+            TextView video=chip(this,"Video",active,()->setVideoMode(true));video.setEnabled(YouTubeVideo.available(t));video.setAlpha(video.isEnabled()?1:.4f);
+            LinearLayout.LayoutParams vp=new LinearLayout.LayoutParams(0,d(44),1);vp.leftMargin=d(10);modeRow.addView(video,vp);
+            video.setContentDescription(video.isEnabled()?"Ver video de la canción":"Video no disponible para esta fuente");
+        }
+        playerCover.setVisibility(active?View.GONE:View.VISIBLE);videoPanel.setVisibility(active?View.VISIBLE:View.GONE);
+        if(active&&foreground){if(videoDialog==null){videoView.setPlayer(player);videoView.setKeepScreenOn(player.getPlayWhenReady());}else fullscreenVideo.setKeepScreenOn(player.getPlayWhenReady());}
+        else {videoView.setPlayer(null);videoView.setKeepScreenOn(false);if(videoDialog!=null)videoDialog.dismiss();}
+    }
+    private void showFullscreenVideo(){
+        if(player==null||!YouTubeVideo.active(player.getCurrentMediaItem())||videoDialog!=null)return;
+        videoView.setPlayer(null);videoView.setKeepScreenOn(false);
+        Dialog dialog=new Dialog(this,android.R.style.Theme_Black_NoTitleBar_Fullscreen);videoDialog=dialog;
+        LinearLayout box=col(this);box.setBackgroundColor(Color.BLACK);
+        fullscreenVideo=new PlayerView(this);fullscreenVideo.setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING);fullscreenVideo.setPlayer(player);fullscreenVideo.setKeepScreenOn(player.getPlayWhenReady());
+        box.addView(fullscreenVideo,new LinearLayout.LayoutParams(-1,0,1));
+        add(box,button(this,"Volver al reproductor",dialog::dismiss));dialog.setContentView(box);
+        dialog.setOnDismissListener(d->{if(fullscreenVideo!=null){fullscreenVideo.setPlayer(null);fullscreenVideo.setKeepScreenOn(false);}fullscreenVideo=null;videoDialog=null;if(foreground&&page.equals("player"))updatePlayback();});
+        dialog.show();dialog.getWindow().setLayout(-1,-1);
+    }
+    private void closeVideoSurface(){
+        if(videoDialog!=null)videoDialog.dismiss();
+        if(videoView!=null){videoView.setPlayer(null);videoView.setKeepScreenOn(false);}
+    }
     private void showQueue(){if(player==null)return;List<String> names=new ArrayList<>();for(int i=0;i<player.getMediaItemCount();i++)names.add((i==player.getCurrentMediaItemIndex()?"●  ":"")+player.getMediaItemAt(i).mediaMetadata.title);AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Cola de reproducción").setItems(names.toArray(new String[0]),(a,i)->{player.seekTo(i,0);player.play();}).setNeutralButton("Editar cola",(a,i)->editQueue()).setPositiveButton("Cerrar",null).create();dialog.show();}
     private void editQueue(){if(player==null||player.getMediaItemCount()==0)return;String[] names=new String[player.getMediaItemCount()];for(int i=0;i<names.length;i++)names[i]=""+player.getMediaItemAt(i).mediaMetadata.title;new AlertDialog.Builder(this).setTitle("Elegí una canción para editar").setItems(names,(a,index)->new AlertDialog.Builder(this).setTitle(names[index]).setItems(new String[]{"Quitar de la cola","Mover al siguiente lugar"},(b,action)->{if(index>=player.getMediaItemCount())return;if(action==0)player.removeMediaItem(index);else player.moveMediaItem(index,Math.min(player.getMediaItemCount()-1,player.getCurrentMediaItemIndex()+1));}).show()).show();}
     private void sleepTimer(){new AlertDialog.Builder(this).setTitle("Pausar la música en…").setItems(new String[]{"15 minutos","30 minutos","60 minutos","Desactivar temporizador"},(dialog,i)->{long minutes=i==0?15:i==1?30:i==2?60:0;getSharedPreferences("settings",MODE_PRIVATE).edit().putLong("sleepUntil",minutes==0?0:System.currentTimeMillis()+minutes*60000).apply();toast(minutes==0?"Temporizador desactivado":"La música se pausará en "+minutes+" minutos");}).show();}

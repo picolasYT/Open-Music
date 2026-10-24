@@ -22,7 +22,11 @@ public final class PlaybackService extends MediaSessionService {
     private final Handler handler=new Handler(Looper.getMainLooper());
     private String recorded="";
     public static MediaItem item(Track t){
+        return item(t,false);
+    }
+    static MediaItem item(Track t,boolean video){
         MediaMetadata.Builder m=new MediaMetadata.Builder().setTitle(t.title).setArtist(t.artist).setAlbumTitle(t.album);
+        Bundle extras=new Bundle();extras.putBoolean(YouTubeVideo.MODE,video&&YouTubeVideo.available(t));m.setExtras(extras);
         if(!t.artwork.isEmpty())m.setArtworkUri(Uri.parse(t.artwork));
         String source=!t.local.isEmpty()?t.local:t.youtube()?"openmusic-youtube:///"+t.id:t.stream;
         return new MediaItem.Builder().setMediaId(t.key()).setUri(source).setMediaMetadata(m.build()).build();
@@ -31,7 +35,7 @@ public final class PlaybackService extends MediaSessionService {
     @Override public void onCreate(){
         super.onCreate();
         DefaultDataSource.Factory source=new DefaultDataSource.Factory(this,httpFactory(Net.HTTP));
-        player=new ExoPlayer.Builder(this).setMediaSourceFactory(new DefaultMediaSourceFactory(YouTubeAudio.factory(this,source))).build();
+        player=new ExoPlayer.Builder(this).setMediaSourceFactory(new YouTubeVideo.Factory(new DefaultMediaSourceFactory(YouTubeAudio.factory(this,source)))).build();
         player.setAudioAttributes(new AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA).build(),true);
         player.setHandleAudioBecomingNoisy(true);player.setWakeMode(C.WAKE_MODE_NETWORK);
         PendingIntent pi=PendingIntent.getActivity(this,0,new Intent(this,MainActivity.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
@@ -40,7 +44,7 @@ public final class PlaybackService extends MediaSessionService {
         List<Track> tracks=Track.decode(prefs.getString("queue","[]"));
         if(!tracks.isEmpty()){List<MediaItem> items=new ArrayList<>();for(Track t:tracks){Track saved=MusicStore.get(this).track(t.key());items.add(item(saved==null?t:saved));}player.setMediaItems(items,Math.min(prefs.getInt("index",0),items.size()-1),prefs.getLong("position",0));player.setRepeatMode(prefs.getInt("repeat",Player.REPEAT_MODE_OFF));player.setShuffleModeEnabled(prefs.getBoolean("shuffle",false));player.prepare();}
         player.addListener(new Player.Listener(){
-            @Override public void onPlayerError(PlaybackException error){AudioDiagnostics.record(YouTubeAudio.userMessage(error));MediaItem item=player.getCurrentMediaItem();if(item!=null&&item.mediaId.startsWith("youtube:"))YouTubeAudio.invalidate(item.mediaId.substring(8));}
+            @Override public void onPlayerError(PlaybackException error){AudioDiagnostics.record(YouTubeAudio.userMessage(error));MediaItem item=player.getCurrentMediaItem();if(item!=null&&item.mediaId.startsWith("youtube:")){YouTubeAudio.invalidate(item.mediaId.substring(8));YouTubeVideo.invalidate(item.mediaId.substring(8));}}
             @Override public void onMediaItemTransition(@Nullable MediaItem m,int reason){recorded="";persist();}
             @Override public void onIsPlayingChanged(boolean playing){if(playing)AudioDiagnostics.record("Reproducción nativa iniciada.");persist();}
             @Override public void onEvents(Player p,Player.Events events){if(p.isPlaying()&&p.getCurrentMediaItem()!=null){String key=p.getCurrentMediaItem().mediaId;if(!key.equals(recorded)){Track t=MusicStore.get(PlaybackService.this).track(key);if(t!=null)MusicStore.get(PlaybackService.this).played(t);recorded=key;}}}

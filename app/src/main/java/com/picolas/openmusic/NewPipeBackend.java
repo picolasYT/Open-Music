@@ -36,14 +36,39 @@ final class NewPipeBackend {
   });initialized=true;
  }
  static AudioAddress resolve(String id)throws IOException{
+  return audio(extract(id));
+ }
+ private static StreamExtractor extract(String id)throws IOException{
   if(!YouTubeProvider.validId(id))throw new IOException("OpenMusic: Identificador de YouTube no válido.");initialize();
   try{
    StreamExtractor e=ServiceList.YouTube.getStreamExtractor("https://www.youtube.com/watch?v="+id);e.fetchPage();
    ContentAvailability availability=e.getContentAvailability();
    if(e.getAgeLimit()>0||availability==ContentAvailability.PAID||availability==ContentAvailability.MEMBERSHIP||availability==ContentAvailability.UPCOMING||e.getPrivacy()==StreamExtractor.Privacy.PRIVATE||e.getPrivacy()==StreamExtractor.Privacy.INTERNAL)throw new IOException("OpenMusic: Esta pista requiere acceso adicional o no está disponible.");
    if(e.getStreamType()!=StreamType.VIDEO_STREAM&&e.getStreamType()!=StreamType.AUDIO_STREAM)throw new IOException("OpenMusic: Esta fuente es una transmisión en vivo. Elegí una canción publicada.");
-   return choose(e.getAudioStreams(),System.currentTimeMillis()/1000);
+   return e;
   }catch(Exception e){throw sourceError(e);}
+ }
+ private static AudioAddress audio(StreamExtractor extractor)throws IOException{
+  try{return choose(extractor.getAudioStreams(),System.currentTimeMillis()/1000);}catch(Exception e){throw sourceError(e);}
+ }
+ static YouTubeVideo.Streams resolveVideo(String id)throws IOException{
+  StreamExtractor extractor=extract(id);
+  try{
+   List<VideoStream> candidates=new ArrayList<>(extractor.getVideoOnlyStreams());candidates.addAll(extractor.getVideoStreams());
+   return new YouTubeVideo.Streams(chooseVideo(candidates,System.currentTimeMillis()/1000),audio(extractor));
+  }catch(Exception e){throw sourceError(e);}
+ }
+ static int height(VideoStream stream){try{return Integer.parseInt(stream.getResolution().split("p",2)[0]);}catch(Exception e){return stream.getHeight();}}
+ static AudioAddress chooseVideo(List<VideoStream> streams,long now)throws IOException{
+  List<VideoStream> ordered=new ArrayList<>(streams);
+  ordered.sort(Comparator.comparingInt(NewPipeBackend::height).reversed());
+  for(VideoStream stream:ordered){
+   // MP4/AVC up to 720p works on the Android 8+ devices supported by the app.
+   if(!stream.isUrl()||stream.getDeliveryMethod()!=DeliveryMethod.PROGRESSIVE_HTTP||stream.getFormat()!=MediaFormat.MPEG_4||height(stream)<=0||height(stream)>720)continue;
+   String codec=stream.getCodec();if(codec!=null&&!codec.isEmpty()&&!codec.startsWith("avc"))continue;
+   try{return AudioAddress.parse(new JSONObject().put("url",stream.getContent()).put("ext","mp4").put("expires",expiry(stream.getContent(),now)).put("headers",new JSONObject().put("User-Agent",USER_AGENT)).toString(),now);}catch(IOException ignored){}catch(JSONException e){throw new IOException("OpenMusic: No se pudo interpretar el video.");}
+  }
+  throw new IOException("OpenMusic: Esta canción no tiene un video compatible disponible. Podés seguir escuchando en modo Música.");
  }
  static AudioAddress choose(List<AudioStream> streams,long now)throws IOException{
   List<AudioStream> ordered=new ArrayList<>(streams);ordered.sort(Comparator.comparingInt((AudioStream a)->a.getFormat()==MediaFormat.M4A?1:0).thenComparingInt(AudioStream::getAverageBitrate).reversed());

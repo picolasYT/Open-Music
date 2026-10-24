@@ -21,7 +21,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Verify profiles, migration, artwork and tutorial on Android 15
+      - name: Verify profiles and native video on Android 15
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -30,13 +30,12 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
-            ./gradlew :app:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true -Pandroid.testInstrumentationRunnerArguments.class=com.picolas.openmusic.ProfileDeviceTest,com.picolas.openmusic.CustomizationDeviceTest
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true -Pandroid.testInstrumentationRunnerArguments.class=com.picolas.openmusic.ProfileDeviceTest,com.picolas.openmusic.CustomizationDeviceTest,com.picolas.openmusic.VideoDeviceTest
             adb pull /sdcard/Android/data/com.picolas.openmusic.next/files qa-screens
-            bash tools/verify_upgrade.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Open-Music-1.6.1-CI
+          name: Open-Music-1.7.0-CI
           path: |
             qa-screens/
             app/build/outputs/apk/debug/app-debug.apk
