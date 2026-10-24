@@ -41,3 +41,12 @@ Abrí **Mis gustos musicales** y seleccioná artistas y géneros. Los favoritos 
 ![Gustos musicales](images/1.6.1/guide-5.png)
 
 Las imágenes son capturas de la app en el emulador Android 15, con un perfil de prueba.
+
+## Ver el video de una canción
+
+1. Buscá y reproducí una canción de **YouTube**.
+2. Tocá el minirreproductor para abrir la canción.
+3. Elegí **Video**, debajo de la carátula. La carga puede tardar unos segundos.
+4. Usá **Pantalla completa** para ampliar, o **Música** para volver al audio. Se conserva la posición y la pausa.
+
+El video necesita conexión; las descargas siguen siendo audio. Si el video no está disponible, Open Music vuelve a Música. Al salir de esta pantalla o minimizar la app continúa el audio.

@@ -55,5 +55,46 @@ public class VideoDeviceTest {
   Method navigate=MainActivity.class.getDeclaredMethod("navigate",String.class);navigate.setAccessible(true);
   inst.runOnMainSync(()->{try{androidx.media3.session.MediaController p=(androidx.media3.session.MediaController)playerField.get(activity);p.setMediaItem(PlaybackService.item(t));navigate.invoke(activity,"player");View root=activity.findViewById(android.R.id.content);TextView music=find(root,"Música"),video=find(root,"Video");assertNotNull(music);assertNotNull(video);assertFalse(video.isEnabled());}catch(ReflectiveOperationException e){throw new RuntimeException(e);}});
  }
+ @Test public void switchingModesThroughMediaSessionKeepsQueuePositionAndPause()throws Exception{
+  File fixture=new File(context.getCacheDir(),"session-video.mp4");
+  try(InputStream in=inst.getContext().getAssets().open("native-video-fixture.mp4");OutputStream out=new FileOutputStream(fixture)){byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)out.write(b,0,n);}
+  Field playerField=MainActivity.class.getDeclaredField("player");playerField.setAccessible(true);
+  Method navigate=MainActivity.class.getDeclaredMethod("navigate",String.class);navigate.setAccessible(true);
+  Method update=MainActivity.class.getDeclaredMethod("updatePlayback");update.setAccessible(true);
+  AtomicReference<ExoPlayer> nativePlayer=new AtomicReference<>();AtomicReference<androidx.media3.session.MediaSession> session=new AtomicReference<>();
+  AtomicReference<com.google.common.util.concurrent.ListenableFuture<androidx.media3.session.MediaController>> future=new AtomicReference<>();
+  AtomicReference<androidx.media3.session.MediaController> original=new AtomicReference<>();
+  androidx.media3.session.MediaController controller=null;
+  try{
+   inst.runOnMainSync(()->{
+    DataSource.Factory local=new ResolvingDataSource.Factory(new DefaultDataSource.Factory(context),spec->spec.withUri(Uri.fromFile(fixture)));
+    ExoPlayer p=new ExoPlayer.Builder(context).setMediaSourceFactory(new YouTubeVideo.Factory(new DefaultMediaSourceFactory(local))).build();nativePlayer.set(p);
+    androidx.media3.session.MediaSession mediaSession=new androidx.media3.session.MediaSession.Builder(context,p).setId("video-test").build();session.set(mediaSession);
+    future.set(new androidx.media3.session.MediaController.Builder(context,mediaSession.getToken()).buildAsync());
+   });
+   controller=future.get().get(30,TimeUnit.SECONDS);final androidx.media3.session.MediaController c=controller;
+   Track track=new Track();track.provider="youtube";track.id="aaaaaaaaaaa";track.title="Open Music · video";track.artist="Prueba local de imagen y audio";track.local=Uri.fromFile(fixture).toString();MusicStore.get(context).save(track);
+   Track next=new Track();next.provider="youtube";next.id="bbbbbbbbbbb";next.title="Siguiente";next.local=track.local;MusicStore.get(context).save(next);
+   inst.runOnMainSync(()->{try{
+    original.set((androidx.media3.session.MediaController)playerField.get(activity));if(original.get()!=null)original.get().pause();playerField.set(activity,c);
+    c.addListener(new Player.Listener(){public void onEvents(Player p,Player.Events events){try{update.invoke(activity);}catch(Exception e){throw new RuntimeException(e);}}});
+    c.setMediaItems(java.util.List.of(PlaybackService.item(track),PlaybackService.item(next)),0,4500);c.setRepeatMode(Player.REPEAT_MODE_ALL);c.prepare();c.pause();navigate.invoke(activity,"player");
+   }catch(Exception e){throw new RuntimeException(e);}});
+   waitReady(c);
+   inst.runOnMainSync(()->{TextView video=find(activity.findViewById(android.R.id.content),"Video");assertNotNull(video);assertTrue(video.isEnabled());video.performClick();});waitReady(c);
+   inst.runOnMainSync(()->{assertTrue(YouTubeVideo.active(c.getCurrentMediaItem()));assertFalse(c.getPlayWhenReady());assertEquals(2,c.getMediaItemCount());assertEquals("youtube:bbbbbbbbbbb",c.getMediaItemAt(1).mediaId);assertEquals(Player.REPEAT_MODE_ALL,c.getRepeatMode());assertTrue(Math.abs(c.getCurrentPosition()-4500)<500);find(activity.findViewById(android.R.id.content),"Pantalla completa").performClick();});
+   inst.waitForIdleSync();Field dialogField=MainActivity.class.getDeclaredField("videoDialog");dialogField.setAccessible(true);
+   inst.runOnMainSync(()->{try{android.app.Dialog dialog=(android.app.Dialog)dialogField.get(activity);assertNotNull(dialog);assertTrue(dialog.isShowing());dialog.dismiss();find(activity.findViewById(android.R.id.content),"Música").performClick();}catch(IllegalAccessException e){throw new RuntimeException(e);}});waitReady(c);
+   inst.runOnMainSync(()->{assertFalse(YouTubeVideo.active(c.getCurrentMediaItem()));assertFalse(c.getPlayWhenReady());assertEquals(2,c.getMediaItemCount());assertTrue(Math.abs(c.getCurrentPosition()-4500)<500);});
+  }finally{
+   final androidx.media3.session.MediaController c=controller;
+   inst.runOnMainSync(()->{try{navigate.invoke(activity,"home");playerField.set(activity,original.get());}catch(Exception e){throw new RuntimeException(e);}if(c!=null)c.release();if(session.get()!=null)session.get().release();if(nativePlayer.get()!=null)nativePlayer.get().release();});fixture.delete();
+  }
+ }
+ private void waitReady(androidx.media3.session.MediaController controller)throws Exception{
+  AtomicBoolean ready=new AtomicBoolean();AtomicReference<PlaybackException> error=new AtomicReference<>();long until=System.currentTimeMillis()+60000;
+  while(!ready.get()&&error.get()==null&&System.currentTimeMillis()<until){inst.runOnMainSync(()->{ready.set(controller.getPlaybackState()==Player.STATE_READY);error.set(controller.getPlayerError());});if(!ready.get())Thread.sleep(100);}
+  assertNull(error.get());assertTrue("Session playback must become ready",ready.get());
+ }
  private TextView find(View view,String label){if(view instanceof TextView&&label.contentEquals(((TextView)view).getText()))return (TextView)view;if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++){TextView found=find(group.getChildAt(i),label);if(found!=null)return found;}}return null;}
 }

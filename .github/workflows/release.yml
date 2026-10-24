@@ -1,4 +1,4 @@
-name: Publish Open Music 1.6.1
+name: Publish Open Music 1.7.0
 on:
   workflow_dispatch:
   workflow_run:
@@ -8,7 +8,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: open-music-release-1.6.1
+  group: open-music-release-1.7.0
   cancel-in-progress: false
 jobs:
   publish:
@@ -37,22 +37,22 @@ jobs:
           ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
       - name: Prepare release assets
         run: |
-          python3 tools/assemble_update.py
+          python3 tools/assemble_update.py --video
           mkdir release-assets
           cd distribution
           sha256sum --check SHA256SUMS
           cd ..
-          cp distribution/Open-Music-1.6.1.apk release-assets/Open-Music-1.6.1.apk
+          cp distribution/Open-Music-1.7.0.apk release-assets/Open-Music-1.7.0.apk
           git archive --format=zip --output=release-assets/Open-Music-source.zip HEAD
           cd release-assets
-          sha256sum Open-Music-1.6.1.apk Open-Music-source.zip > SHA256SUMS
+          sha256sum Open-Music-1.7.0.apk Open-Music-source.zip > SHA256SUMS
       - name: Publish APK and source
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          if gh release view v1.6.1 >/dev/null 2>&1; then
-            echo 'Release v1.6.1 already exists; preserving it.'
+          if gh release view v1.7.0 >/dev/null 2>&1; then
+            echo 'Release v1.7.0 already exists; preserving it.'
             exit 0
           fi
-          gh release create v1.6.1 release-assets/Open-Music-1.6.1.apk release-assets/Open-Music-source.zip release-assets/SHA256SUMS --target "$(git rev-parse HEAD)" --title "Open Music 1.6.1" --notes-file docs/RELEASE-1.6.1.md
+          gh release create v1.7.0 release-assets/Open-Music-1.7.0.apk release-assets/Open-Music-source.zip release-assets/SHA256SUMS --target "$(git rev-parse HEAD)" --title "Open Music 1.7.0" --notes-file docs/RELEASE-1.7.0.md

@@ -1,3 +1,11 @@
+## Actualización 1.7.0 — Música y video
+
+Elegí una canción de YouTube, abrí el reproductor y tocá **Video**. **Música** vuelve al audio conservando el punto de reproducción y la pausa. Video hasta 720p, pantalla completa y los controles habituales de cola, letras y temporizador.
+
+El video requiere conexión incluso si descargaste el audio. Si no está disponible, la app vuelve a Música. Al salir del reproductor o mandar la app al fondo continúa en modo audio. Otras fuentes muestran Video desactivado.
+
+[Descargar APK](https://github.com/picolasYT/Open-Music/releases/latest) · [Novedades](docs/RELEASE-1.7.0.md)
+
 ## Actualización 1.6.1
 
 Perfil con avatar y banner corregidos, botones redondeados y guía rápida ilustrada sin conexión. Ver [novedades](docs/RELEASE-1.6.1.md).

@@ -32,6 +32,7 @@ jobs:
           script: |
             ./gradlew :app:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true -Pandroid.testInstrumentationRunnerArguments.class=com.picolas.openmusic.ProfileDeviceTest,com.picolas.openmusic.CustomizationDeviceTest,com.picolas.openmusic.VideoDeviceTest
             adb pull /sdcard/Android/data/com.picolas.openmusic.next/files qa-screens
+            bash tools/verify_upgrade.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
