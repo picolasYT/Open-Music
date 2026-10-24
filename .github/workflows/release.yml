@@ -37,6 +37,7 @@ jobs:
           ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
       - name: Prepare release assets
         run: |
+          python3 tools/source_fingerprint.py --verify
           python3 tools/assemble_update.py --video
           mkdir release-assets
           cd distribution

@@ -61,13 +61,14 @@ public class VideoDeviceTest {
   Field playerField=MainActivity.class.getDeclaredField("player");playerField.setAccessible(true);
   Method navigate=MainActivity.class.getDeclaredMethod("navigate",String.class);navigate.setAccessible(true);
   Method update=MainActivity.class.getDeclaredMethod("updatePlayback");update.setAccessible(true);
+  AtomicBoolean pictureOpened=new AtomicBoolean(),soundtrackOpened=new AtomicBoolean();
   AtomicReference<ExoPlayer> nativePlayer=new AtomicReference<>();AtomicReference<androidx.media3.session.MediaSession> session=new AtomicReference<>();
   AtomicReference<com.google.common.util.concurrent.ListenableFuture<androidx.media3.session.MediaController>> future=new AtomicReference<>();
   AtomicReference<androidx.media3.session.MediaController> original=new AtomicReference<>();
   androidx.media3.session.MediaController controller=null;
   try{
    inst.runOnMainSync(()->{
-    DataSource.Factory local=new ResolvingDataSource.Factory(new DefaultDataSource.Factory(context),spec->spec.withUri(Uri.fromFile(fixture)));
+    DataSource.Factory local=new ResolvingDataSource.Factory(new DefaultDataSource.Factory(context),spec->{if(YouTubeVideo.VIDEO.equals(spec.uri.getScheme()))pictureOpened.set(true);if(YouTubeVideo.AUDIO.equals(spec.uri.getScheme()))soundtrackOpened.set(true);return spec.withUri(Uri.fromFile(fixture));});
     ExoPlayer p=new ExoPlayer.Builder(context).setMediaSourceFactory(new YouTubeVideo.Factory(new DefaultMediaSourceFactory(local))).build();nativePlayer.set(p);
     androidx.media3.session.MediaSession mediaSession=new androidx.media3.session.MediaSession.Builder(context,p).setId("video-test").build();session.set(mediaSession);
     future.set(new androidx.media3.session.MediaController.Builder(context,mediaSession.getToken()).buildAsync());
@@ -80,20 +81,20 @@ public class VideoDeviceTest {
     c.addListener(new Player.Listener(){public void onEvents(Player p,Player.Events events){try{update.invoke(activity);}catch(Exception e){throw new RuntimeException(e);}}});
     c.setMediaItems(java.util.List.of(PlaybackService.item(track),PlaybackService.item(next)),0,4500);c.setRepeatMode(Player.REPEAT_MODE_ALL);c.prepare();c.pause();navigate.invoke(activity,"player");
    }catch(Exception e){throw new RuntimeException(e);}});
-   waitReady(c);
-   inst.runOnMainSync(()->{TextView video=find(activity.findViewById(android.R.id.content),"Video");assertNotNull(video);assertTrue(video.isEnabled());video.performClick();});waitReady(c);
+   waitModeReady(c,false);
+   inst.runOnMainSync(()->{TextView video=find(activity.findViewById(android.R.id.content),"Video");assertNotNull(video);assertTrue(video.isEnabled());video.performClick();});waitModeReady(c,true);assertTrue("Video source must actually open",pictureOpened.get());assertTrue("Separate soundtrack must actually open",soundtrackOpened.get());
    inst.runOnMainSync(()->{assertTrue(YouTubeVideo.active(c.getCurrentMediaItem()));assertFalse(c.getPlayWhenReady());assertEquals(2,c.getMediaItemCount());assertEquals("youtube:bbbbbbbbbbb",c.getMediaItemAt(1).mediaId);assertEquals(Player.REPEAT_MODE_ALL,c.getRepeatMode());assertTrue(Math.abs(c.getCurrentPosition()-4500)<500);find(activity.findViewById(android.R.id.content),"Pantalla completa").performClick();});
    inst.waitForIdleSync();Field dialogField=MainActivity.class.getDeclaredField("videoDialog");dialogField.setAccessible(true);
-   inst.runOnMainSync(()->{try{android.app.Dialog dialog=(android.app.Dialog)dialogField.get(activity);assertNotNull(dialog);assertTrue(dialog.isShowing());dialog.dismiss();find(activity.findViewById(android.R.id.content),"Música").performClick();}catch(IllegalAccessException e){throw new RuntimeException(e);}});waitReady(c);
-   inst.runOnMainSync(()->{assertFalse(YouTubeVideo.active(c.getCurrentMediaItem()));assertFalse(c.getPlayWhenReady());assertEquals(2,c.getMediaItemCount());assertTrue(Math.abs(c.getCurrentPosition()-4500)<500);});
+   inst.runOnMainSync(()->{try{android.app.Dialog dialog=(android.app.Dialog)dialogField.get(activity);assertNotNull(dialog);assertTrue(dialog.isShowing());dialog.dismiss();find(activity.findViewById(android.R.id.content),"Música").performClick();}catch(IllegalAccessException e){throw new RuntimeException(e);}});waitModeReady(c,false);
+   inst.runOnMainSync(()->{assertFalse("Audio mode must replace video mode",YouTubeVideo.active(c.getCurrentMediaItem()));assertFalse("Mode switch must retain pause",c.getPlayWhenReady());assertEquals(2,c.getMediaItemCount());assertTrue(Math.abs(c.getCurrentPosition()-4500)<500);});
   }finally{
    final androidx.media3.session.MediaController c=controller;
    inst.runOnMainSync(()->{try{navigate.invoke(activity,"home");playerField.set(activity,original.get());}catch(Exception e){throw new RuntimeException(e);}if(c!=null)c.release();if(session.get()!=null)session.get().release();if(nativePlayer.get()!=null)nativePlayer.get().release();});fixture.delete();
   }
  }
- private void waitReady(androidx.media3.session.MediaController controller)throws Exception{
+ private void waitModeReady(androidx.media3.session.MediaController controller,boolean video)throws Exception{
   AtomicBoolean ready=new AtomicBoolean();AtomicReference<PlaybackException> error=new AtomicReference<>();long until=System.currentTimeMillis()+60000;
-  while(!ready.get()&&error.get()==null&&System.currentTimeMillis()<until){inst.runOnMainSync(()->{ready.set(controller.getPlaybackState()==Player.STATE_READY);error.set(controller.getPlayerError());});if(!ready.get())Thread.sleep(100);}
+  while(!ready.get()&&error.get()==null&&System.currentTimeMillis()<until){inst.runOnMainSync(()->{ready.set(controller.getPlaybackState()==Player.STATE_READY&&YouTubeVideo.active(controller.getCurrentMediaItem())==video);error.set(controller.getPlayerError());});if(!ready.get())Thread.sleep(100);}
   assertNull(error.get());assertTrue("Session playback must become ready",ready.get());
  }
  private TextView find(View view,String label){if(view instanceof TextView&&label.contentEquals(((TextView)view).getText()))return (TextView)view;if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++){TextView found=find(group.getChildAt(i),label);if(found!=null)return found;}}return null;}

@@ -29,6 +29,8 @@ public final class PlaybackService extends MediaSessionService {
         Bundle extras=new Bundle();extras.putBoolean(YouTubeVideo.MODE,video&&YouTubeVideo.available(t));m.setExtras(extras);
         if(!t.artwork.isEmpty())m.setArtworkUri(Uri.parse(t.artwork));
         String source=!t.local.isEmpty()?t.local:t.youtube()?"openmusic-youtube:///"+t.id:t.stream;
+        // A distinct URI forces Media3 to rebuild the source rather than only update metadata.
+        if(video&&YouTubeVideo.available(t))source="openmusic-youtube-video:///"+t.id;
         return new MediaItem.Builder().setMediaId(t.key()).setUri(source).setMediaMetadata(m.build()).build();
     }
     static OkHttpDataSource.Factory httpFactory(okhttp3.OkHttpClient client){return new OkHttpDataSource.Factory(client).setDefaultRequestProperties(Collections.singletonMap("User-Agent","OpenMusic/1.5 (Android; Picolas)")).setContentTypePredicate(AudioContent::accepted);}
